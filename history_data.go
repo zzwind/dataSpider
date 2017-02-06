@@ -12,7 +12,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-const LIST_URL = "http://quotes.money.163.com/fund/jzzs_%s.html?start=%s&end=%s"
+const (
+	LIST_URL = "http://quotes.money.163.com/fund/jzzs_%s.html?start=%s&end=%s"
+	BASE_URL = "http://quotes.money.163.com"
+)
 
 func StartTdData() {
 
@@ -43,7 +46,7 @@ func StartTdData() {
 		}
 		fmt.Println(row.Id, row.SYMBOL, row.SNAME, row.PUBLISHDATE, row.LASTUPDATE)
 
-		nextPage(Download(fmt.Sprintf(LIST_URL, row.SYMBOL, row.LASTUPDATE, time.Now().Format("2006-01-02"))))
+		fetchData(fmt.Sprintf(LIST_URL, row.SYMBOL, row.LASTUPDATE, time.Now().Format("2006-01-02")))
 
 		os.Exit(0)
 
@@ -57,24 +60,33 @@ func StartTdData() {
 }
 
 func nextPage(b []byte) {
-
 	reg_next_page := regexp.MustCompile(`<a href="([^>]*?)" class="pages_flip">下一页</a>`) //正则表达式的惰性匹配是从头匹配到尾部，而不能从尾部匹配上来。
 
 	matchNP := reg_next_page.FindAllSubmatch(b, -1)
 
 	for _, j := range matchNP {
-		fmt.Printf("%s\n", j[1])
+		//fmt.Printf("%s\n", BASE_URL+string(j[1]))
+		fetchData(BASE_URL + string(j[1]))
 	}
 
 }
 
+func fetchData(url string) {
+	fmt.Println(url)
+	b := Download(url)
+	getTdData(b)
+	nextPage(b)
+
+}
+
 func getTdData(b []byte) {
-	reg1 := regexp.MustCompile(`<td>(?:<span class=".*?">)?(.*?)(?:</span>)?</td>`) //<td>.*?([\d\-\.]*).*?</td>        <td.*?>([\d\-\.]*).*?</td>
+	reg1 := regexp.MustCompile(`<tr>\s*<td>(?:<span class=".*?">)?(.*?)(?:</span>)?</td>\s*\s*<td>(?:<span class=".*?">)?(.*?)(?:</span>)?</td>\s*<td>(?:<span class=".*?">)?(.*?)(?:</span>)?</td>\s*<td>(?:<span class=".*?">)?(.*?)(?:</span>)?</td>\s*</tr>`) //<td>.*?([\d\-\.]*).*?</td>        <td.*?>([\d\-\.]*).*?</td>
 
 	matchTd := reg1.FindAllSubmatch(b, -1)
 
 	for _, j := range matchTd {
-		fmt.Printf("%s\n", j[1])
+		fmt.Printf("%s\n", string(j[1])+string(j[2])+string(j[3])+string(j[4]))
+		//fmt.Println(j)
 	}
 
 }
