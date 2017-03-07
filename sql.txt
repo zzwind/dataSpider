@@ -1,0 +1,19 @@
+
+;alter sequence fundmetadata_id_seq restart with 1;
+
+;alter sequence history_id_seq restart with 1;
+
+;select * from history where fundid=6666 order by date desc;
+
+;select sum(a.rate) from (select rate from history group by fundid order by date desc) a
+
+;select a.fundid,sum(a.rate) from (select fundid,rate from history group by fundid limit 5 ) a
+
+
+
+
+select sum(a.rate) from (select rate from history where fundid=6666 order by date desc limit 10 ) a
+
+
+
+select fundid,sum(rate) from history where date > '2017-02-01' group by fundid order by fundid desc

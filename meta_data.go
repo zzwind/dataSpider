@@ -6,16 +6,20 @@ import (
 
 	"database/sql"
 
-	_ "github.com/go-sql-driver/mysql"
+	"log"
+
+	_ "github.com/lib/pq"
 )
 
 //获取所有基金基础信息
 
+//定义获取的json结构
 type Fund struct {
 	Page int `json:"page"`
 	List []FundList
 }
 
+//定义基金json的结构
 type FundList struct {
 	//OFPROFILE8  string
 	SNAME       string //基金名称
@@ -28,26 +32,20 @@ type FundList struct {
 func GetMetaData(fundtype string, url string) {
 
 	var fund Fund
-
+	//下载url
 	b := Download(url)
-
+	//解析下载的json数据
 	err := json.Unmarshal(b, &fund)
 	if err != nil {
 		panic(err)
 	}
-
-	db, err := sql.Open("mysql", "root:123456@/fund")
+	//链接数据库
+	db, err := sql.Open("postgres", "user=postgres dbname=fund password=123456 sslmode=disable")
 	if err != nil {
-		panic(err.Error())
+		log.Fatal(err)
 	}
-	defer db.Close()
-
-	err = db.Ping()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	stmtIns, err := db.Prepare("INSERT INTO fundmetadata(symbol,sname,publishdate,fundtype) VALUES( ?, ?, ?, ? )") // ? = placeholder
+	//初始化insert sql语句
+	stmtIns, err := db.Prepare("INSERT INTO fundmetadata(symbol,sname,publishdate,fundtype) VALUES( $1, $2, $3, $4)") // ? = placeholder
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
@@ -56,7 +54,7 @@ func GetMetaData(fundtype string, url string) {
 	for _, j := range fund.List {
 
 		if j.PUBLISHDATE == "" {
-			j.PUBLISHDATE = "2000-00-00" //如果没有成立时间，就默认为此时间
+			j.PUBLISHDATE = "2000-01-01" //如果没有成立时间，就默认为此时间
 		}
 
 		_, err = stmtIns.Exec(j.SYMBOL, j.SNAME, j.PUBLISHDATE, fundtype) // Insert tuples (i, i^2)
@@ -67,26 +65,4 @@ func GetMetaData(fundtype string, url string) {
 
 	fmt.Println("done", fundtype)
 
-	//session, err := mgo.Dial("localhost")
-	//if err != nil {
-	//	panic(err)
-	//}
-	//defer session.Close()
-	//
-	//session.SetMode(mgo.Monotonic, true)
-	//
-	//c := session.DB("test").C("fundMetaData")
-	//
-	//for _, j := range fund.List {
-	//
-	//	err = c.Insert(&j)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//}
-
 }
-
-//func main() {
-//	GetMetaData()
-//}
