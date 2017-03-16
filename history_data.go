@@ -88,7 +88,7 @@ func getTdData(b []byte, db *sql.DB, id int) {
 			fmt.Println(j[3])
 			fmt.Printf("%s\n", j[3])
 			//binary.LittleEndian.PutUint16(j[3], 0)
-			j[3] = Float32ToByte(0.00)
+			j[3] = []byte("0.00")
 		}
 
 		//valuetotal, _ := strconv.ParseFloat(vtp, 32)
